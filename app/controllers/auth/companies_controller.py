@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.models.companies import Company  # Import Company from models
-from app import db
+from app.extensions import db
 from datetime import datetime
 
 company = Blueprint('company', __name__, url_prefix='/api/v1/company')

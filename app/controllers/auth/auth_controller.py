@@ -6,7 +6,7 @@ from app.models.users import User
 # Import validators
 ##
 from flask import Blueprint, request, jsonify
-from extensions import db, bcrypt
+from app.extensions import db, bcrypt
 from app.status_codes import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,

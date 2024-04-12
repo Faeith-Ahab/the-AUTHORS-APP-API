@@ -1,5 +1,5 @@
 class Config:
-   SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:@localhost/authors_api'
-   #JWT_SECRET_KEY='AUTHORS API'
+   SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:@localhost/app'
+   JWT_SECRET_KEY='authors'
    
       
