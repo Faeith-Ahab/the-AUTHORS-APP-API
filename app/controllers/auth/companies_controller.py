@@ -1,9 +1,14 @@
 from flask import Blueprint, request, jsonify
 from app.models.companies import Company  # Import Company from models
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
 from datetime import datetime
 
+
 company = Blueprint('company', __name__, url_prefix='/api/v1/company')
+
+
+# CREATING A NEW COMPANY 
 
 @company.route('/register', methods=['POST'])
 def register_company():
@@ -15,8 +20,8 @@ def register_company():
         if not all([data.get(field) for field in ['name', 'origin', 'description', 'user_id', 'user_type']]):
             return jsonify({"error": "All fields are required"}), 400
 
-# CREATING A NEW COMPANY 
-        
+
+
         
         new_company = Company(
             name=data['name'],
@@ -31,7 +36,7 @@ def register_company():
         db.session.add(new_company)
         db.session.commit()
 
-        # Build response message
+        # Response message
         return jsonify({"message": f"Company '{new_company.name}' has been registered"}), 201
 
     except Exception as e:
@@ -105,3 +110,6 @@ def get_all_companies():
 
   companies_data = [company.to_dict() for company in companies]
   return jsonify(companies_data), 200
+
+
+

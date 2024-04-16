@@ -1,16 +1,16 @@
 from flask import Blueprint, request, jsonify
-
 from app import db
 from datetime import datetime
 from app.models.books import Book
-from flask_jwt_extended import create_access_token
-from flask_jwt_extended import get_jwt_identity
-
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 # Define Blueprint
 books = Blueprint('books', __name__, url_prefix='/api/v1/books')
 
-# CREATE A BOOK  (POST)
+
+
+# CREATE A BOOK
+
 @books.route('/', methods=['POST'])
 def create_book():
     try:
@@ -49,49 +49,121 @@ def create_book():
         # Handle exceptions appropriately (e.g., database errors, validation errors)
         return jsonify({"error": str(e)}), 500
 
-# ... (Other routes for GET, PUT, DELETE operations for books, if needed)
 
 
-# SEARCH BOOKS (GET) with Access Token
+# GET ALL BOOKS
+
 @books.route('/', methods=['GET'])
-def search_books():
+def get_all_books():
     try:
-        # Extract query parameters (optional)
-        title = request.args.get('title')
-        genre = request.args.get('genre')
+        # Query all books
+        books = Book.query.all()
 
-        # Build query based on parameters
-        query = Book.query
-        if title:
-            query = query.filter(Book.title.like("%" + title + "%"))
-        if genre:
-            query = query.filter(Book.genre == genre)
-
-        # Execute query and fetch books
-        books = query.all()
-
-        # Build response data with access token for each book (if user is authenticated)
-        book_data = []
-        current_user = get_jwt_identity()
-
-        for book in books:
-            access_token = None
-            if current_user: 
-                try:
-                    access_token = create_access_token(identity=book.id)
-                except Exception as e: 
-                    print(f"Error creating access token for book {book.id}: {str(e)}")
-
-            book_data.append({
-                "id": book.id,
-                "title": book.title,
-                "genre": book.genre,
-                "access_token": access_token,  # Include access token if available
-            
-            })
+        # Prepare response data
+        book_data = [{
+            "id": book.id,
+            "title": book.title,
+            "genre": book.genre,
+            "publication_date": book.publication_date.strftime('%Y-%m-%d'),
+            "isbn": book.isbn,
+            "description": book.description,
+            "company_id": book.company_id,
+            "user_id": book.user_id
+        } for book in books]
 
         return jsonify({"books": book_data}), 200
 
     except Exception as e:
-        print(f"An error occurred: {str(e)}")  
+        return jsonify({"error": "Internal server error"}), 500
+    
+    
+
+# GET A SPECIFIC BOOK
+
+@books.route('/<int:book_id>', methods=['GET'])
+def get_book(book_id):
+    try:
+        # Query the book by id
+        book = Book.query.get(book_id)
+
+        # Check if the book exists
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+
+        # Prepare response data
+        book_data = {
+            "id": book.id,
+            "title": book.title,
+            "genre": book.genre,
+            "publication_date": book.publication_date.strftime('%Y-%m-%d'),
+            "isbn": book.isbn,
+            "description": book.description,
+            "company_id": book.company_id,
+            "user_id": book.user_id
+        }
+
+        return jsonify({"book": book_data}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Internal server error"}), 500
+
+
+
+# UPDATE A BOOK
+
+@books.route('/<int:book_id>', methods=['PUT'])
+def update_book(book_id):
+    try:
+        # Extract data from request
+        data = request.get_json()
+
+        # Query the book by id
+        book = Book.query.get(book_id)
+
+        # Check if the book exists
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+
+        # Update book attributes
+        book.title = data.get('title', book.title)
+        book.pages = data.get('pages', book.pages)
+        book.price = data.get('price', book.price)
+        book.price_unit = data.get('price_unit', book.price_unit)
+        if 'publication_date' in data:
+            book.publication_date = datetime.strptime(data['publication_date'], '%Y-%m-%d').date()
+        book.isbn = data.get('isbn', book.isbn)
+        book.genre = data.get('genre', book.genre)
+        book.description = data.get('description', book.description)
+        book.image = data.get('image', book.image)
+        book.company_id = data.get('company_id', book.company_id)
+        book.user_id = data.get('user_id', book.user_id)
+
+        # Commit changes to database
+        db.session.commit()
+
+        return jsonify({"message": "Book updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Internal server error"}), 500
+    
+    
+
+# DELETE A BOOK
+@books.route('/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    try:
+        # Query the book by id
+        book = Book.query.get(book_id)
+
+        # Check if the book exists
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+
+        # Delete the book
+        db.session.delete(book)
+        db.session.commit()
+
+        return jsonify({"message": "Book deleted successfully"}), 200
+
+    except Exception as e:
         return jsonify({"error": "Internal server error"}), 500

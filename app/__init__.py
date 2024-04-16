@@ -13,6 +13,8 @@ def create_app():
     
     app.config.from_object('config.Config')
     
+    app.config['DEBUG'] = True  ##debug
+    
     db.init_app(app)
     migrate.init_app(app, db)
     bcrypt.init_app(app)

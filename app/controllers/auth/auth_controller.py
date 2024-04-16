@@ -3,8 +3,7 @@ from app.models.users import User
 
 # Request response cycle to perform required validations
 
-# Import validators
-##
+#import validators
 from flask import Blueprint, request, jsonify
 from app.extensions import db, bcrypt
 from app.status_codes import (
@@ -31,7 +30,7 @@ auth = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 @auth.route('/register', methods=['POST'])
 def register_users():
     try:
-        data = request.get_json()
+        data = request.get_json()   #/data = request.son
 
         # Validate user data (e.g., check for required fields, email format, password strength)
         # ... (add necessary validation checks)
@@ -48,7 +47,7 @@ def register_users():
         # Check for existing user with the same email
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            return jsonify({'error': 'Email already exists'}), 409
+            return jsonify({'error': 'Email already exists'}), 409    # Used status codes directly
 
         # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -65,7 +64,7 @@ def register_users():
         image=image
         )
 
-        # Add the user to the database
+        # Add the user to the database.
         db.session.add(new_user)
         db.session.commit()
 
@@ -85,11 +84,11 @@ def login():
         password = request.json.get('password')
 
         if not email or not password:
-            return jsonify({'error': 'Missing email or password'}), 400  # Used status code directly
+            return jsonify({'error': 'Missing email or password'}), 400  
 
         user = User.query.filter_by(email=email).first()
         if not user or not bcrypt.check_password_hash(user.password, password):
-            return jsonify({'error': 'Invalid email or password'}), 401  # Used status code directly
+            return jsonify({'error': 'Invalid email or password'}), 401  
 
         access_token = create_access_token(identity=user.id)
         return jsonify({
@@ -191,7 +190,7 @@ def delete_user(id):
         return jsonify({'error': 'Failed to delete user', 'details': str(e)}), 500
     
     
-    # note to self: Create db with POSTMAN
+    
     
     
     
