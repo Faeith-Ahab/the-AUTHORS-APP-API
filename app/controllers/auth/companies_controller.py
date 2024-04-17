@@ -1,9 +1,12 @@
 from flask import Blueprint, request, jsonify
+
 from app.models.companies import Company  # Import Company from models
-from flask_jwt_extended import jwt_required, get_jwt_identity
+
 from app.extensions import db
 from datetime import datetime
 
+
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 company = Blueprint('company', __name__, url_prefix='/api/v1/company')
 

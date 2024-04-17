@@ -1,7 +1,10 @@
 from flask import Blueprint, request, jsonify
-from app import db
-from datetime import datetime
+
 from app.models.books import Book
+
+from app.extensions import db
+from datetime import datetime
+
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 # Define Blueprint
@@ -18,24 +21,24 @@ def create_book():
         data = request.get_json()
 
         # Basic input validation
-        required_fields = ['title', 'pages', 'price', 'price_unit', 'publication_date',
+        required_fields = ['title', 'pages', 'price', 'currency', 'publication_date',
                            'isbn', 'genre', 'description', 'company_id', 'user_id']
         if not all(field in data for field in required_fields):
-            return jsonify({"error": "All required fields are missing"}), 400
+            return jsonify({"error": "All fields are REQUIRED"}), 400
 
         # Create a new book
         new_book = Book(
             title=data['title'],
             pages=data['pages'],
             price=data['price'],
-            price_unit=data['price_unit'],
-            publication_date=datetime.strptime(data['publication_date'], '%Y-%m-%d').date(),  # Parse date string
+            currency=data['currency'],
+            publication_date=['publication_date'], 
             isbn=data['isbn'],
             genre=data['genre'],
             description=data['description'],
             image=data['image'] if data.get('image') else None,  # Handle optional image
-            company_id=data['company_id'],
-            user_id=data['user_id']
+            user_id=data['user_id'],
+            company_id=data['company_id']
         )
 
         # Add and commit to database
@@ -63,12 +66,17 @@ def get_all_books():
         book_data = [{
             "id": book.id,
             "title": book.title,
-            "genre": book.genre,
-            "publication_date": book.publication_date.strftime('%Y-%m-%d'),
+            "pages": book.pages,
+            "price": book.price,
+            "currency": book.currency,
+            "publication_date": book.publication_date,
             "isbn": book.isbn,
+            "genre": book.genre,
             "description": book.description,
-            "company_id": book.company_id,
-            "user_id": book.user_id
+            "image": book.image,
+            "user_id": book.user_id,
+            "company_id": book.company_id
+            
         } for book in books]
 
         return jsonify({"books": book_data}), 200
@@ -94,12 +102,18 @@ def get_book(book_id):
         book_data = {
             "id": book.id,
             "title": book.title,
+            "pages": book.pages,
+            "price": book.price,
+            "currency": book.currency,
             "genre": book.genre,
-            "publication_date": book.publication_date.strftime('%Y-%m-%d'),
+            "publication_date": book.publication_date,
             "isbn": book.isbn,
+            "genre": book.genre,
             "description": book.description,
-            "company_id": book.company_id,
-            "user_id": book.user_id
+            "image": book.image,
+            "user_id": book.user_id,
+            "company_id": book.company_id
+            
         }
 
         return jsonify({"book": book_data}), 200
@@ -111,42 +125,36 @@ def get_book(book_id):
 
 # UPDATE A BOOK
 
+
 @books.route('/<int:book_id>', methods=['PUT'])
 def update_book(book_id):
     try:
-        # Extract data from request
-        data = request.get_json()
-
-        # Query the book by id
+        # Get book object by ID
         book = Book.query.get(book_id)
 
-        # Check if the book exists
+        # Check if book exists
         if not book:
-            return jsonify({"error": "Book not found"}), 404
+            return jsonify({"error": f"Book with ID {book_id} not found"}), 404
+
+        # Extract data from request (excluding ID)
+        data = request.json
+        update_data = {field: data.get(field) for field in ['title', 'pages', 'price', 'currency', 'publication_date', 'isbn', 'genre', 'description', 'image', 'user_id', 'company_id'] if field != 'id'}
 
         # Update book attributes
-        book.title = data.get('title', book.title)
-        book.pages = data.get('pages', book.pages)
-        book.price = data.get('price', book.price)
-        book.price_unit = data.get('price_unit', book.price_unit)
-        if 'publication_date' in data:
-            book.publication_date = datetime.strptime(data['publication_date'], '%Y-%m-%d').date()
-        book.isbn = data.get('isbn', book.isbn)
-        book.genre = data.get('genre', book.genre)
-        book.description = data.get('description', book.description)
-        book.image = data.get('image', book.image)
-        book.company_id = data.get('company_id', book.company_id)
-        book.user_id = data.get('user_id', book.user_id)
+        for field, value in update_data.items():
+            setattr(book, field, value)
 
         # Commit changes to database
         db.session.commit()
 
-        return jsonify({"message": "Book updated successfully"}), 200
+        # Build response message
+        return jsonify({"message": f"Book with ID {book_id} has been updated"}), 200
 
     except Exception as e:
-        return jsonify({"error": "Internal server error"}), 500
-    
-    
+        # Handle exceptions appropriately
+        return jsonify({"error": str(e)}), 500
+
+
 
 # DELETE A BOOK
 @books.route('/<int:book_id>', methods=['DELETE'])
